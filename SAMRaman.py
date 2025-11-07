@@ -100,7 +100,7 @@ def parse_args():
     parser.add_argument(
         "--optimizer",
         type=str,
-        choices=["sam", "asam", "adam", "sgd"],
+        choices=["sam", "asam", "adam", "sgd", "friendlysam"],
         help=f"Optimizer to use for training. Default: {config.optimizer}",
     )
     parser.add_argument(
@@ -128,6 +128,16 @@ def parse_args():
         "--label_smoothing",
         type=float,
         help=f"Label smoothing factor. Default: {config.label_smoothing}",
+    )
+    parser.add_argument(
+        "--sigma",
+        type=float,
+        help=f"Sigma parameter for FriendlySAM. Default: {config.sigma}",
+    )
+    parser.add_argument(
+        "--lmbda",
+        type=float,
+        help=f"Lambda parameter for FriendlySAM. Default: {config.lmbda}",
     )
     parser.add_argument(
         "--scheduler",
@@ -208,10 +218,12 @@ def run_model_training_and_evaluation():
         base_optimizer_name=config["base_optimizer"],
         rho=config["rho"],
         weight_decay=config["weight_decay"],
+        sigma=config["sigma"],
+    lmbda=config["lmbda"],
     )
     sched_optimizer = (
         optimizer.base_optimizer
-        if config["optimizer"] in ["sam", "asam"]
+        if config["optimizer"] in ["sam", "asam", "friendlysam"]
         else optimizer
     )
     scheduler = get_scheduler(

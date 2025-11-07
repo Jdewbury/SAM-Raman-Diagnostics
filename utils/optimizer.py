@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils.sam import SAM
+from utils.sam import SAM, FriendlySAM
 
 
 def get_optimizer(
@@ -10,6 +10,8 @@ def get_optimizer(
     base_optimizer_name: str = "adam",
     rho: float = 0.05,
     weight_decay: float = 0.0005,
+    sigma: float = 1.0,
+    lmbda: float = 0.9,
 ) -> torch.optim:
     """Retrieves and initializes select optimizer.
 
@@ -29,7 +31,7 @@ def get_optimizer(
     elif optimizer_name == "sgd":
         print("Using SGD optimizer")
         return torch.optim.SGD(model.parameters(), lr=learning_rate)
-    elif optimizer_name in ["sam", "asam"]:
+    elif optimizer_name in ["sam", "asam", "friendlysam"]:
         if base_optimizer_name == "adam":
             base_optim = torch.optim.Adam
         elif base_optimizer_name == "sgd":
@@ -41,9 +43,21 @@ def get_optimizer(
         if optimizer_name == "sam":
             print("Using SAM optimizer")
             adaptive = False
-        else:
+        elif optimizer_name == "asam":
             print("Using ASAM optimizer")
             adaptive = True
+        elif optimizer_name == "friendlysam":
+            print(f"Using FriendlySAM optimizer")
+            return FriendlySAM(
+                model.parameters(),
+                base_optim,
+                rho=rho,
+                sigma=sigma,
+                lmbda=lmbda,
+                adaptive=False,
+                lr=learning_rate,
+                weight_decay=weight_decay,
+            )
         return SAM(
             model.parameters(),
             base_optim,
@@ -54,7 +68,7 @@ def get_optimizer(
         )
     else:
         raise ValueError(
-            f"Invalid optimizer: {optimizer_name}. Choose from 'adam', 'sgd', 'sam', or 'asam'."
+            f"Invalid optimizer: {optimizer_name}. Choose from 'adam', 'sgd', 'sam', 'asam', or 'friendlysam'."
         )
 
 
