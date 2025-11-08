@@ -42,8 +42,14 @@ class Config:
     momentum: float = 0.9
     weight_decay: float = 0.0005
     label_smoothing: float = 0.1
+    
+    # FriendlySAM specific params
     sigma: float = 1.0
     lmbda: float = 0.9
+    
+    # FisherSAM specific params
+    keep_ratio: float = 0.1
+    mask_update_freq: int = 100
 
     # scheduler params
     scheduler: str = "step"

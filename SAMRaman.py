@@ -100,7 +100,7 @@ def parse_args():
     parser.add_argument(
         "--optimizer",
         type=str,
-        choices=["sam", "asam", "adam", "sgd", "friendlysam"],
+        choices=["sam", "asam", "adam", "sgd", "friendlysam", "fishersam"],
         help=f"Optimizer to use for training. Default: {config.optimizer}",
     )
     parser.add_argument(
@@ -138,6 +138,16 @@ def parse_args():
         "--lmbda",
         type=float,
         help=f"Lambda parameter for FriendlySAM. Default: {config.lmbda}",
+    )
+    parser.add_argument(
+        "--keep_ratio",
+        type=float,
+        help=f"Keep ratio for FisherSAM (fraction of params to mask). Default: {config.keep_ratio}",
+    )
+    parser.add_argument(
+        "--mask_update_freq",
+        type=int,
+        help=f"Mask update frequency for FisherSAM (iterations). Default: {config.mask_update_freq}",
     )
     parser.add_argument(
         "--scheduler",
@@ -219,11 +229,13 @@ def run_model_training_and_evaluation():
         rho=config["rho"],
         weight_decay=config["weight_decay"],
         sigma=config["sigma"],
-    lmbda=config["lmbda"],
+        lmbda=config["lmbda"],
+        keep_ratio=config["keep_ratio"],
+        mask_update_freq=config["mask_update_freq"],
     )
     sched_optimizer = (
         optimizer.base_optimizer
-        if config["optimizer"] in ["sam", "asam", "friendlysam"]
+        if config["optimizer"] in ["sam", "asam", "friendlysam", "fishersam"]
         else optimizer
     )
     scheduler = get_scheduler(

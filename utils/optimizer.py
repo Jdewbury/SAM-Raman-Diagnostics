@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils.sam import SAM, FriendlySAM
+from utils.sam import SAM, FriendlySAM, FisherSAM
 
 
 def get_optimizer(
@@ -12,6 +12,8 @@ def get_optimizer(
     weight_decay: float = 0.0005,
     sigma: float = 1.0,
     lmbda: float = 0.9,
+    keep_ratio: float = 0.1,
+    mask_update_freq: int = 100,
 ) -> torch.optim:
     """Retrieves and initializes select optimizer.
 
@@ -22,6 +24,10 @@ def get_optimizer(
         base_optimizer_name: base optimizer for sam optimizers
         rho: size of rho step
         weight_decay: desired weight decay for optimizer
+        sigma: sigma parameter for FriendlySAM
+        lmbda: lambda parameter for FriendlySAM (momentum decay)
+        keep_ratio: fraction of parameters to mask for FisherSAM (0.0 to 1.0)
+        mask_update_freq: how often to recompute Fisher mask for FisherSAM (in iterations)
     """
     if optimizer_name == "adam":
         print("Using Adam optimizer")
@@ -31,7 +37,7 @@ def get_optimizer(
     elif optimizer_name == "sgd":
         print("Using SGD optimizer")
         return torch.optim.SGD(model.parameters(), lr=learning_rate)
-    elif optimizer_name in ["sam", "asam", "friendlysam"]:
+    elif optimizer_name in ["sam", "asam", "friendlysam", "fishersam"]:
         if base_optimizer_name == "adam":
             base_optim = torch.optim.Adam
         elif base_optimizer_name == "sgd":
@@ -58,6 +64,21 @@ def get_optimizer(
                 lr=learning_rate,
                 weight_decay=weight_decay,
             )
+        else:
+            print(f"Using FisherSAM optimizer")
+            optimizer = FisherSAM(
+                model.parameters(),
+                base_optim,
+                model=model,
+                rho=rho,
+                keep_ratio=keep_ratio,
+                mask_update_freq=mask_update_freq,
+                adaptive=False,
+                lr=learning_rate,
+                weight_decay=weight_decay,
+            )
+            optimizer.init_mask()
+            return optimizer
         return SAM(
             model.parameters(),
             base_optim,
@@ -68,7 +89,7 @@ def get_optimizer(
         )
     else:
         raise ValueError(
-            f"Invalid optimizer: {optimizer_name}. Choose from 'adam', 'sgd', 'sam', 'asam', or 'friendlysam'."
+            f"Invalid optimizer: {optimizer_name}. Choose from 'adam', 'sgd', 'sam', 'asam', 'friendlysam', or 'fishersam'."
         )
 
 
